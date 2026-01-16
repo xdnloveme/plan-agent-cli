@@ -1,154 +1,259 @@
-import chalk from 'chalk';
-import { config } from '../../config/env';
+/**
+ * Log level type
+ */
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 /**
- * 日志级别枚举
+ * Log entry
  */
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3,
+export interface LogEntry {
+  level: LogLevel;
+  message: string;
+  timestamp: Date;
+  context?: string;
+  data?: Record<string, unknown>;
 }
 
 /**
- * 日志级别映射
+ * Logger options
  */
-const LOG_LEVEL_MAP: Record<string, LogLevel> = {
-  debug: LogLevel.DEBUG,
-  info: LogLevel.INFO,
-  warn: LogLevel.WARN,
-  error: LogLevel.ERROR,
+export interface LoggerOptions {
+  /** Minimum log level to output */
+  level?: LogLevel;
+  /** Context prefix for all logs */
+  context?: string;
+  /** Enable timestamps */
+  timestamps?: boolean;
+  /** Enable colored output */
+  colors?: boolean;
+  /** Custom log handler */
+  handler?: (entry: LogEntry) => void;
+}
+
+/**
+ * Log level priority
+ */
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
 };
 
 /**
- * 获取当前配置的日志级别
+ * ANSI color codes
  */
-function getCurrentLogLevel(): LogLevel {
-  return LOG_LEVEL_MAP[config.logging.level] ?? LogLevel.INFO;
-}
+const COLORS = {
+  reset: '\x1b[0m',
+  debug: '\x1b[36m', // cyan
+  info: '\x1b[32m', // green
+  warn: '\x1b[33m', // yellow
+  error: '\x1b[31m', // red
+  context: '\x1b[90m', // gray
+};
 
 /**
- * 格式化时间戳
- */
-function formatTimestamp(): string {
-  return new Date().toISOString();
-}
-
-/**
- * 日志记录器类
+ * Structured logger for the agent framework
  */
 export class Logger {
-  private context: string;
-  private currentLevel: LogLevel;
+  private level: LogLevel;
+  private context?: string;
+  private timestamps: boolean;
+  private colors: boolean;
+  private handler?: (entry: LogEntry) => void;
 
-  constructor(context: string) {
-    this.context = context;
-    this.currentLevel = getCurrentLogLevel();
+  constructor(options: LoggerOptions = {}) {
+    this.level = options.level ?? 'info';
+    this.context = options.context;
+    this.timestamps = options.timestamps ?? true;
+    this.colors = options.colors ?? true;
+    this.handler = options.handler;
   }
 
   /**
-   * 调试日志
+   * Create a child logger with additional context
    */
-  debug(message: string, ...args: unknown[]): void {
-    if (this.currentLevel <= LogLevel.DEBUG) {
-      console.log(
-        chalk.gray(`[${formatTimestamp()}]`),
-        chalk.blue('[DEBUG]'),
-        chalk.cyan(`[${this.context}]`),
-        message,
-        ...args
-      );
+  child(context: string): Logger {
+    const childContext = this.context ? `${this.context}:${context}` : context;
+    return new Logger({
+      level: this.level,
+      context: childContext,
+      timestamps: this.timestamps,
+      colors: this.colors,
+      handler: this.handler,
+    });
+  }
+
+  /**
+   * Log a debug message
+   */
+  debug(message: string, data?: Record<string, unknown>): void {
+    this.log('debug', message, data);
+  }
+
+  /**
+   * Log an info message
+   */
+  info(message: string, data?: Record<string, unknown>): void {
+    this.log('info', message, data);
+  }
+
+  /**
+   * Log a warning message
+   */
+  warn(message: string, data?: Record<string, unknown>): void {
+    this.log('warn', message, data);
+  }
+
+  /**
+   * Log an error message
+   */
+  error(message: string, data?: Record<string, unknown>): void {
+    this.log('error', message, data);
+  }
+
+  /**
+   * Log an error object
+   */
+  logError(error: Error, message?: string): void {
+    this.error(message ?? error.message, {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
+  }
+
+  /**
+   * Internal log method
+   */
+  private log(level: LogLevel, message: string, data?: Record<string, unknown>): void {
+    if (LOG_LEVELS[level] < LOG_LEVELS[this.level]) {
+      return;
+    }
+
+    const entry: LogEntry = {
+      level,
+      message,
+      timestamp: new Date(),
+      context: this.context,
+      data,
+    };
+
+    if (this.handler) {
+      this.handler(entry);
+    } else {
+      this.defaultHandler(entry);
     }
   }
 
   /**
-   * 信息日志
+   * Default console output handler
    */
-  info(message: string, ...args: unknown[]): void {
-    if (this.currentLevel <= LogLevel.INFO) {
-      console.log(
-        chalk.gray(`[${formatTimestamp()}]`),
-        chalk.green('[INFO]'),
-        chalk.cyan(`[${this.context}]`),
-        message,
-        ...args
-      );
+  private defaultHandler(entry: LogEntry): void {
+    const parts: string[] = [];
+
+    // Timestamp
+    if (this.timestamps) {
+      const ts = entry.timestamp.toISOString();
+      parts.push(this.colors ? `${COLORS.context}${ts}${COLORS.reset}` : ts);
+    }
+
+    // Level
+    const levelStr = entry.level.toUpperCase().padEnd(5);
+    if (this.colors) {
+      parts.push(`${COLORS[entry.level]}${levelStr}${COLORS.reset}`);
+    } else {
+      parts.push(levelStr);
+    }
+
+    // Context
+    if (entry.context) {
+      const ctx = `[${entry.context}]`;
+      parts.push(this.colors ? `${COLORS.context}${ctx}${COLORS.reset}` : ctx);
+    }
+
+    // Message
+    parts.push(entry.message);
+
+    // Data
+    if (entry.data && Object.keys(entry.data).length > 0) {
+      parts.push(JSON.stringify(entry.data));
+    }
+
+    const output = parts.join(' ');
+
+    switch (entry.level) {
+      case 'debug':
+      case 'info':
+        // eslint-disable-next-line no-console
+        console.log(output);
+        break;
+      case 'warn':
+        // eslint-disable-next-line no-console
+        console.warn(output);
+        break;
+      case 'error':
+        // eslint-disable-next-line no-console
+        console.error(output);
+        break;
     }
   }
 
   /**
-   * 警告日志
+   * Set log level
    */
-  warn(message: string, ...args: unknown[]): void {
-    if (this.currentLevel <= LogLevel.WARN) {
-      console.log(
-        chalk.gray(`[${formatTimestamp()}]`),
-        chalk.yellow('[WARN]'),
-        chalk.cyan(`[${this.context}]`),
-        message,
-        ...args
-      );
-    }
+  setLevel(level: LogLevel): void {
+    this.level = level;
   }
 
   /**
-   * 错误日志
+   * Get current log level
    */
-  error(message: string, ...args: unknown[]): void {
-    if (this.currentLevel <= LogLevel.ERROR) {
-      console.error(
-        chalk.gray(`[${formatTimestamp()}]`),
-        chalk.red('[ERROR]'),
-        chalk.cyan(`[${this.context}]`),
-        message,
-        ...args
-      );
-    }
-  }
-
-  /**
-   * 成功日志（总是显示）
-   */
-  success(message: string, ...args: unknown[]): void {
-    console.log(
-      chalk.gray(`[${formatTimestamp()}]`),
-      chalk.green.bold('[SUCCESS]'),
-      chalk.cyan(`[${this.context}]`),
-      chalk.green(message),
-      ...args
-    );
-  }
-
-  /**
-   * 任务进度日志
-   */
-  progress(current: number, total: number, message: string): void {
-    const percentage = Math.round((current / total) * 100);
-    const progressBar = this.createProgressBar(percentage);
-    console.log(
-      chalk.gray(`[${formatTimestamp()}]`),
-      chalk.blue('[PROGRESS]'),
-      chalk.cyan(`[${this.context}]`),
-      progressBar,
-      `${percentage}%`,
-      message
-    );
-  }
-
-  /**
-   * 创建进度条
-   */
-  private createProgressBar(percentage: number): string {
-    const filled = Math.round(percentage / 5);
-    const empty = 20 - filled;
-    return chalk.green('█'.repeat(filled)) + chalk.gray('░'.repeat(empty));
+  getLevel(): LogLevel {
+    return this.level;
   }
 }
 
 /**
- * 创建日志记录器实例
+ * Create a JSON logger for structured logging
  */
-export function createLogger(context: string): Logger {
-  return new Logger(context);
+export function createJsonLogger(options: Omit<LoggerOptions, 'handler'> = {}): Logger {
+  return new Logger({
+    ...options,
+    colors: false,
+    handler: (entry) => {
+      // eslint-disable-next-line no-console
+      console.log(
+        JSON.stringify({
+          timestamp: entry.timestamp.toISOString(),
+          level: entry.level,
+          context: entry.context,
+          message: entry.message,
+          ...entry.data,
+        })
+      );
+    },
+  });
+}
+
+/**
+ * Global logger instance
+ */
+let globalLogger: Logger | null = null;
+
+/**
+ * Get or create global logger
+ */
+export function getGlobalLogger(options?: LoggerOptions): Logger {
+  if (!globalLogger) {
+    globalLogger = new Logger(options);
+  }
+  return globalLogger;
+}
+
+/**
+ * Reset global logger
+ */
+export function resetGlobalLogger(): void {
+  globalLogger = null;
 }

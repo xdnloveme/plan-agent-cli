@@ -1,26 +1,89 @@
 /**
- * AI Agent CLI - 主入口
- * 
- * 三层架构智能任务执行系统
- * - PlanAgent: 感知层 - 语义理解和任务分解
- * - RunAgent: 执行层 - 任务执行和资源管理
- * - QualityAgent: 质量层 - 结果验证和修复
+ * BaseAgent Framework
+ *
+ * A TypeScript AI agent framework with multi-agent collaboration support.
+ * Built on top of Vercel AI SDK for model-agnostic LLM integration.
  */
 
-// 核心模块
-export * from './core/index';
+// Agents
+export { BaseAgent, type AgentDependencies } from './agents/BaseAgent';
+export { SubAgent, ToolSubAgent, createToolSubAgent } from './agents/SubAgent';
+export { MainAgent, createMainAgent, type MainAgentDependencies } from './agents/MainAgent';
+export {
+  AgentCoordinator,
+  type SelectionStrategy,
+  PrioritySelectionStrategy,
+  CapabilityMatchStrategy,
+  RoundRobinStrategy,
+} from './agents/AgentCoordinator';
+export type {
+  AgentConfig,
+  AgentContext,
+  AgentResult,
+  Message,
+  SubAgentConfig,
+  ModelConfig,
+  GenerateOptions,
+  GenerateResult,
+  CoordinationConfig,
+  AgentEvents,
+  ToolCallResult,
+} from './agents/types';
 
-// Agent 模块
-export * from './agents/index';
+// Core - Model
+export { ModelAdapter, type StreamChunk } from './core/model/ModelAdapter';
+export {
+  ModelFactory,
+  ProviderNotAvailableError,
+  InvalidModelConfigError,
+} from './core/model/ModelFactory';
 
-// 调度模块
-export * from './scheduler/index';
+// Core - Tools
+export {
+  BaseTool,
+  createTool,
+  type ToolContext,
+  type ToolResult,
+} from './core/tools/BaseTool';
+export { ToolRegistry, type ToolPermission } from './core/tools/ToolRegistry';
+export {
+  CalculatorTool,
+  createCalculatorTool,
+  WebSearchTool,
+  createWebSearchTool,
+  FileSystemTool,
+  createFileSystemTool,
+  registerBuiltinTools,
+  type SearchProvider,
+  MockSearchProvider,
+} from './core/tools/builtin';
 
-// 协议模块
-export * from './protocols/index';
+// Core - Memory
+export { Memory, createMemory, type MemoryOptions } from './core/memory/Memory';
 
-// 工具模块
-export * from './utils/index';
+// Utils
+export { EventBus, getGlobalEventBus, resetGlobalEventBus } from './utils/event-bus';
+export { TaskQueue } from './utils/task-queue';
+export {
+  Logger,
+  createJsonLogger,
+  getGlobalLogger,
+  resetGlobalLogger,
+  type LogLevel,
+  type LogEntry,
+  type LoggerOptions,
+} from './utils/logger';
 
-// Memory 模块 - LLM 交互记录
-export * from './memory/index';
+// Config
+export {
+  configSchema,
+  modelConfigSchema,
+  subAgentConfigSchema,
+  coordinationConfigSchema,
+  parseConfig,
+  validateConfig,
+  type Config,
+  type ModelConfigType,
+  type SubAgentConfigType,
+  type CoordinationConfigType,
+} from './config/schema';
