@@ -72,7 +72,15 @@ export class ModelAdapter {
       maxSteps?: number;
     }
   ): Promise<GenerateResult> {
-    const { messages, systemPrompt, tools, maxTokens, temperature, onToolCall, maxSteps = 5 } = options;
+    const {
+      messages,
+      systemPrompt,
+      tools,
+      maxTokens,
+      temperature,
+      onToolCall,
+      maxSteps = 5,
+    } = options;
 
     const allMessages = this.prepareMessages(messages, systemPrompt);
 
@@ -172,7 +180,9 @@ export class ModelAdapter {
   /**
    * Map AI SDK result to our GenerateResult
    */
-  private mapGenerateResult(result: GenerateTextResult<Record<string, CoreTool>, never>): GenerateResult {
+  private mapGenerateResult(
+    result: GenerateTextResult<Record<string, CoreTool>, never>
+  ): GenerateResult {
     return {
       text: result.text,
       toolCalls: result.toolCalls?.map((call) => ({

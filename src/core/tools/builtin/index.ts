@@ -2,7 +2,12 @@
  * Built-in tools exports
  */
 export { CalculatorTool, createCalculatorTool } from './CalculatorTool';
-export { WebSearchTool, createWebSearchTool, type SearchProvider, MockSearchProvider } from './WebSearchTool';
+export {
+  WebSearchTool,
+  createWebSearchTool,
+  type SearchProvider,
+  MockSearchProvider,
+} from './WebSearchTool';
 export { FileSystemTool, createFileSystemTool } from './FileSystemTool';
 
 import { CalculatorTool } from './CalculatorTool';

@@ -310,7 +310,9 @@ export class AgentCoordinator {
   /**
    * Set selection strategy
    */
-  setSelectionStrategy(strategy: SelectionStrategy | CoordinationConfig['selectionStrategy']): void {
+  setSelectionStrategy(
+    strategy: SelectionStrategy | CoordinationConfig['selectionStrategy']
+  ): void {
     if (typeof strategy === 'string') {
       this.selectionStrategy = this.createStrategy(strategy);
     } else {

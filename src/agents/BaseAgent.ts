@@ -4,13 +4,7 @@ import type { ToolRegistry } from '../core/tools/ToolRegistry';
 import type { Memory } from '../core/memory/Memory';
 import type { EventBus } from '../utils/event-bus';
 import type { Logger } from '../utils/logger';
-import type {
-  AgentConfig,
-  AgentContext,
-  AgentResult,
-  Message,
-  GenerateOptions,
-} from './types';
+import type { AgentConfig, AgentContext, AgentResult, Message, GenerateOptions } from './types';
 
 /**
  * Base agent dependencies - injected via constructor

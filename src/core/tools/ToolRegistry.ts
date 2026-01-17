@@ -88,7 +88,11 @@ export class ToolRegistry {
   /**
    * Check if an agent can access a tool
    */
-  canAccess(agentId: string, toolName: string, requiredPermission: ToolPermission = 'execute'): boolean {
+  canAccess(
+    agentId: string,
+    toolName: string,
+    requiredPermission: ToolPermission = 'execute'
+  ): boolean {
     const entry = this.tools.get(toolName);
     if (!entry) {
       return false;
@@ -144,11 +148,7 @@ export class ToolRegistry {
   /**
    * Execute a tool by name
    */
-  async execute(
-    name: string,
-    input: unknown,
-    context: ToolContext
-  ): Promise<ToolResult> {
+  async execute(name: string, input: unknown, context: ToolContext): Promise<ToolResult> {
     const entry = this.tools.get(name);
     if (!entry) {
       return {
@@ -184,9 +184,7 @@ export class ToolRegistry {
   getDescriptions(agentId?: string): string {
     const tools = agentId ? this.getForAgent(agentId) : this.getAll();
 
-    return tools
-      .map((tool) => `- ${tool.name}: ${tool.description}`)
-      .join('\n');
+    return tools.map((tool) => `- ${tool.name}: ${tool.description}`).join('\n');
   }
 
   /**

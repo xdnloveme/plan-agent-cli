@@ -106,7 +106,9 @@ export function parseConfig(config: unknown): Config {
 /**
  * Validate configuration without throwing
  */
-export function validateConfig(config: unknown): { success: true; data: Config } | { success: false; error: z.ZodError } {
+export function validateConfig(
+  config: unknown
+): { success: true; data: Config } | { success: false; error: z.ZodError } {
   const result = configSchema.safeParse(config);
   if (result.success) {
     return { success: true, data: result.data };

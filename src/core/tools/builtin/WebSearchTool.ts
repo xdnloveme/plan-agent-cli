@@ -6,12 +6,7 @@ import { BaseTool, type ToolContext, type ToolResult } from '../BaseTool';
  */
 const webSearchInputSchema = z.object({
   query: z.string().min(1).describe('Search query string'),
-  maxResults: z
-    .number()
-    .min(1)
-    .max(10)
-    .default(5)
-    .describe('Maximum number of results to return'),
+  maxResults: z.number().min(1).max(10).default(5).describe('Maximum number of results to return'),
 });
 
 type WebSearchInput = z.infer<typeof webSearchInputSchema>;

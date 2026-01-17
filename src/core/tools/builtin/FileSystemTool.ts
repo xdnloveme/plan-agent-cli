@@ -15,10 +15,7 @@ const fileSystemInputSchema = z.object({
   operation: fileOperationSchema.describe('File system operation to perform'),
   path: z.string().describe('File or directory path'),
   content: z.string().optional().describe('Content to write (for write operation)'),
-  encoding: z
-    .enum(['utf8', 'utf-8', 'base64', 'hex'])
-    .default('utf8')
-    .describe('File encoding'),
+  encoding: z.enum(['utf8', 'utf-8', 'base64', 'hex']).default('utf8').describe('File encoding'),
 });
 
 type FileSystemInput = z.infer<typeof fileSystemInputSchema>;

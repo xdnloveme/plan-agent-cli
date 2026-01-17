@@ -248,10 +248,7 @@ export class Memory {
 
     for (const entry of this.conversations.values()) {
       totalMessages += entry.messages.length;
-      totalTokens += entry.messages.reduce(
-        (sum, msg) => sum + this.estimateTokens(msg.content),
-        0
-      );
+      totalTokens += entry.messages.reduce((sum, msg) => sum + this.estimateTokens(msg.content), 0);
     }
 
     return {

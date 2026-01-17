@@ -28,10 +28,7 @@ export interface ToolResult<T = unknown> {
  * Provides a consistent interface for tool definition and execution.
  * Tools are the primary way agents interact with external systems.
  */
-export abstract class BaseTool<
-  TInput extends z.ZodType = z.ZodType,
-  TOutput = unknown,
-> {
+export abstract class BaseTool<TInput extends z.ZodType = z.ZodType, TOutput = unknown> {
   /** Unique tool name */
   abstract readonly name: string;
 
@@ -44,10 +41,7 @@ export abstract class BaseTool<
   /**
    * Execute the tool with validated input
    */
-  abstract execute(
-    input: z.infer<TInput>,
-    context?: ToolContext
-  ): Promise<ToolResult<TOutput>>;
+  abstract execute(input: z.infer<TInput>, context?: ToolContext): Promise<ToolResult<TOutput>>;
 
   /**
    * Convert to AI SDK CoreTool format
@@ -69,7 +63,9 @@ export abstract class BaseTool<
   /**
    * Validate input against schema
    */
-  validateInput(input: unknown): { success: true; data: z.infer<TInput> } | { success: false; error: z.ZodError } {
+  validateInput(
+    input: unknown
+  ): { success: true; data: z.infer<TInput> } | { success: false; error: z.ZodError } {
     const result = this.inputSchema.safeParse(input);
     if (result.success) {
       return { success: true, data: result.data };

@@ -149,29 +149,19 @@ export class MainAgent extends BaseAgent {
   /**
    * Execute multiple tasks in parallel
    */
-  async executeParallel(
-    tasks: string[],
-    context?: AgentContext
-  ): Promise<AgentResult[]> {
+  async executeParallel(tasks: string[], context?: AgentContext): Promise<AgentResult[]> {
     const ctx = this.createContext(context);
 
-    return this.coordinator.executeParallel(
-      tasks.map((task) => ({ task, context: ctx }))
-    );
+    return this.coordinator.executeParallel(tasks.map((task) => ({ task, context: ctx })));
   }
 
   /**
    * Execute multiple tasks sequentially
    */
-  async executeSequential(
-    tasks: string[],
-    context?: AgentContext
-  ): Promise<AgentResult[]> {
+  async executeSequential(tasks: string[], context?: AgentContext): Promise<AgentResult[]> {
     const ctx = this.createContext(context);
 
-    return this.coordinator.executeSequential(
-      tasks.map((task) => ({ task, context: ctx }))
-    );
+    return this.coordinator.executeSequential(tasks.map((task) => ({ task, context: ctx })));
   }
 
   /**

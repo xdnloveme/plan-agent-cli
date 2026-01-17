@@ -74,10 +74,7 @@ export class EventBus {
   /**
    * Wait for an event to be emitted
    */
-  waitFor<K extends keyof AgentEvents>(
-    event: K,
-    timeout?: number
-  ): Promise<AgentEvents[K]> {
+  waitFor<K extends keyof AgentEvents>(event: K, timeout?: number): Promise<AgentEvents[K]> {
     return new Promise((resolve, reject) => {
       const timeoutId = timeout
         ? setTimeout(() => {
