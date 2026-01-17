@@ -14,7 +14,7 @@
     "lint": "bun run --filter='*' lint",
     "format": "bun run --filter='*' format",
     "typecheck": "bun run --filter='*' typecheck",
-    "example": "bun --cwd packages/example run-example.ts"
+    "example": "bun run --cwd packages/example example"
   },
   "engines": {
     "node": ">=18.0.0"

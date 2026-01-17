@@ -27,20 +27,47 @@ if (!fileName) {
   process.exit(1);
 }
 
+// Check if file exists first
+const files = await readdir(examplesDir);
+const fileExists = files.includes(`${fileName}.ts`);
+
+if (!fileExists) {
+  console.error(`Example not found: ${fileName}`);
+  console.log('\nAvailable examples:');
+  files
+    .filter((f) => f.endsWith('.ts'))
+    .forEach((f) => console.log(`  - ${f.replace('.ts', '')}`));
+  process.exit(1);
+}
+
+// Use relative path from current script location (works better with tsx/bun)
+const relativePath = `./examples/${fileName}.ts`;
 const examplePath = join(examplesDir, `${fileName}.ts`);
-const exampleUrl = pathToFileURL(examplePath).href;
 
 try {
-  await import(exampleUrl);
+  // Try using relative path first (works better with tsx/bun)
+  await import(relativePath);
 } catch (error) {
-  if ((error as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND') {
-    console.error(`Example not found: ${fileName}`);
-    console.log('\nAvailable examples:');
-    const files = await readdir(examplesDir);
-    files
-      .filter((f) => f.endsWith('.ts'))
-      .forEach((f) => console.log(`  - ${f.replace('.ts', '')}`));
-    process.exit(1);
+  const err = error as NodeJS.ErrnoException;
+  
+  // If relative path doesn't work, try absolute path
+  if (err.code === 'ERR_MODULE_NOT_FOUND' || err.message?.includes('Cannot find module')) {
+    try {
+      const exampleUrl = pathToFileURL(examplePath).href;
+      await import(exampleUrl);
+    } catch (absError) {
+      const absErr = absError as NodeJS.ErrnoException;
+      console.error(`Error running example "${fileName}":`, absErr.message);
+      console.error(`\nTried relative path: ${relativePath}`);
+      console.error(`Tried absolute path: ${examplePath}`);
+      console.log('\nAvailable examples:');
+      files
+        .filter((f) => f.endsWith('.ts'))
+        .forEach((f) => console.log(`  - ${f.replace('.ts', '')}`));
+      process.exit(1);
+    }
+  } else {
+    // Re-throw other errors (e.g., syntax errors, import errors)
+    throw error;
   }
-  throw error;
 }

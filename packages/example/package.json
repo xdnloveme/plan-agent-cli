@@ -24,7 +24,8 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@ai-agent-plan/core": "workspace:*"
+    "@ai-agent-plan/core": "workspace:*",
+    "@ai-sdk/openai": ">=1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
