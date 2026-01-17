@@ -1,0 +1,54 @@
+{
+  "name": "@ai-agent-plan/example",
+  "version": "0.1.0",
+  "description": "Examples for the AI agent framework",
+  "type": "module",
+  "scripts": {
+    "example": "tsx run-example.ts",
+    "build": "echo 'Example package does not need build'",
+    "dev": "echo 'Example package does not need dev'",
+    "test": "echo 'Example package does not need test'",
+    "test:run": "echo 'Example package does not need test:run'",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write \"**/*.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "example"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@ai-agent-plan/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "prettier": "^3.2.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "@ai-sdk/openai": ">=1.0.0",
+    "@ai-sdk/anthropic": ">=1.0.0",
+    "@ai-sdk/google": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@ai-sdk/openai": {
+      "optional": true
+    },
+    "@ai-sdk/anthropic": {
+      "optional": true
+    },
+    "@ai-sdk/google": {
+      "optional": true
+    }
+  }
+}

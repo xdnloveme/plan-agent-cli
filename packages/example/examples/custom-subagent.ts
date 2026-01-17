@@ -5,9 +5,13 @@
  * with specialized behavior.
  */
 
-import { SubAgent } from '../agents/SubAgent';
-import type { AgentDependencies } from '../agents/BaseAgent';
-import type { AgentContext, AgentResult, SubAgentConfig } from '../agents/types';
+import {
+  SubAgent,
+  type AgentDependencies,
+  type AgentContext,
+  type AgentResult,
+  type SubAgentConfig,
+} from '@ai-agent-plan/core';
 
 /**
  * Custom code review sub-agent

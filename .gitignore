@@ -4,6 +4,11 @@ node_modules/
 # Build output
 dist/
 
+# Lock files (using bun)
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
 # IDE
 .idea/
 .vscode/

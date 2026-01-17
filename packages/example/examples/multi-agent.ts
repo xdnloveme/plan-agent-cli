@@ -5,15 +5,18 @@
  * with specialized sub-agents working together.
  */
 
-import { MainAgent, type MainAgentDependencies } from '../agents/MainAgent';
-import { ModelFactory } from '../core/model/ModelFactory';
-import { ToolRegistry } from '../core/tools/ToolRegistry';
-import { Memory } from '../core/memory/Memory';
-import { EventBus } from '../utils/event-bus';
-import { TaskQueue } from '../utils/task-queue';
-import { Logger } from '../utils/logger';
-import { registerBuiltinTools } from '../core/tools/builtin';
-import type { Config } from '../config/schema';
+import {
+  MainAgent,
+  type MainAgentDependencies,
+  ModelFactory,
+  ToolRegistry,
+  Memory,
+  EventBus,
+  TaskQueue,
+  Logger,
+  registerBuiltinTools,
+  type Config,
+} from '@ai-agent-plan/core';
 
 /**
  * Example configuration
