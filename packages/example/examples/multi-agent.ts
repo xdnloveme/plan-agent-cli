@@ -26,7 +26,7 @@ const exampleConfig: Config = {
   name: 'Research Assistant',
   model: {
     provider: 'openai',
-    name: 'gpt-4-turbo',
+    name: 'qwen3-coder-plus',
     // apiKey will be read from OPENAI_API_KEY env var
   },
   systemPrompt: `You are a helpful research assistant. You can search the web, 

@@ -1,4 +1,4 @@
-import type { CoreMessage, CoreTool } from 'ai';
+import type { ModelMessage, Tool } from 'ai';
 
 /**
  * Message in conversation history
@@ -110,11 +110,11 @@ export interface SubAgentConfig extends AgentConfig {
  */
 export interface GenerateOptions {
   /** Messages to send */
-  messages: CoreMessage[];
+  messages: ModelMessage[];
   /** System prompt override */
   systemPrompt?: string;
   /** Tools available for the model */
-  tools?: Record<string, CoreTool>;
+  tools?: Record<string, Tool>;
   /** Maximum tokens to generate */
   maxTokens?: number;
   /** Temperature for randomness */

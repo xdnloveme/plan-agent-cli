@@ -1,4 +1,4 @@
-import type { CoreTool } from 'ai';
+import type { Tool } from 'ai';
 import type { BaseTool, ToolContext, ToolResult } from './BaseTool';
 
 /**
@@ -133,10 +133,10 @@ export class ToolRegistry {
   }
 
   /**
-   * Convert tools to AI SDK CoreTool format for an agent
+   * Convert tools to AI SDK Tool format for an agent
    */
-  toCoreTools(agentId: string): Record<string, CoreTool> {
-    const tools: Record<string, CoreTool> = {};
+  toCoreTools(agentId: string): Record<string, Tool> {
+    const tools: Record<string, Tool> = {};
 
     for (const tool of this.getForAgent(agentId)) {
       tools[tool.name] = tool.toCoreTool();

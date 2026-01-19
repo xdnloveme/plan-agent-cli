@@ -1,4 +1,4 @@
-import type { CoreMessage } from 'ai';
+import type { ModelMessage } from 'ai';
 import type { ModelAdapter } from '../core/model/ModelAdapter';
 import type { ToolRegistry } from '../core/tools/ToolRegistry';
 import type { Memory } from '../core/memory/Memory';
@@ -63,7 +63,7 @@ export abstract class BaseAgent {
    * Generate a response using the model
    */
   protected async generate(
-    messages: CoreMessage[],
+    messages: ModelMessage[],
     options: Partial<GenerateOptions> = {}
   ): Promise<AgentResult> {
     try {
@@ -81,7 +81,7 @@ export abstract class BaseAgent {
         toolCalls: result.toolCalls?.map((call) => ({
           toolName: call.toolName,
           toolCallId: call.toolCallId,
-          args: call.args,
+          args: call.args as Record<string, unknown>,
           result: undefined, // Will be filled if tools are executed
         })),
         metadata: {
@@ -103,7 +103,7 @@ export abstract class BaseAgent {
    * Generate a response with automatic tool execution
    */
   protected async generateWithTools(
-    messages: CoreMessage[],
+    messages: ModelMessage[],
     options: Partial<GenerateOptions> & { maxSteps?: number } = {}
   ): Promise<AgentResult> {
     try {
@@ -117,7 +117,7 @@ export abstract class BaseAgent {
         onToolCall: (call) => {
           this.eventBus.emit('tool:call', {
             toolName: call.toolName,
-            args: call.args,
+            args: call.args as Record<string, unknown>,
             agentId: this.id,
           });
         },
@@ -129,7 +129,7 @@ export abstract class BaseAgent {
         toolCalls: result.toolCalls?.map((call) => ({
           toolName: call.toolName,
           toolCallId: call.toolCallId,
-          args: call.args,
+          args: call.args as Record<string, unknown>,
           result: undefined,
         })),
         metadata: {
@@ -169,9 +169,9 @@ export abstract class BaseAgent {
   }
 
   /**
-   * Convert Message to CoreMessage format
+   * Convert Message to ModelMessage format
    */
-  protected toCoreMesages(messages: Message[]): CoreMessage[] {
+  protected toCoreMesges(messages: Message[]): ModelMessage[] {
     return messages.map((msg) => ({
       role: msg.role as 'user' | 'assistant' | 'system',
       content: msg.content,

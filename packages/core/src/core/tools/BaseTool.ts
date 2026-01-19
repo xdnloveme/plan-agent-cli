@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { CoreTool } from 'ai';
+import type { Tool } from 'ai';
 
 /**
  * Tool execution context
@@ -44,12 +44,12 @@ export abstract class BaseTool<TInput extends z.ZodType = z.ZodType, TOutput = u
   abstract execute(input: z.infer<TInput>, context?: ToolContext): Promise<ToolResult<TOutput>>;
 
   /**
-   * Convert to AI SDK CoreTool format
+   * Convert to AI SDK Tool format
    */
-  toCoreTool(): CoreTool {
+  toCoreTool(): Tool {
     return {
       description: this.description,
-      parameters: this.inputSchema,
+      inputSchema: this.inputSchema, // AI SDK 5.x uses inputSchema instead of parameters
       execute: async (args: z.infer<TInput>) => {
         const result = await this.execute(args);
         if (result.success) {

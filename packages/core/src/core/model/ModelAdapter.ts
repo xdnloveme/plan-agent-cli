@@ -1,8 +1,9 @@
 import {
   generateText,
   streamText,
-  type CoreMessage,
-  type CoreTool,
+  stepCountIs,
+  type ModelMessage,
+  type Tool,
   type LanguageModel,
   type GenerateTextResult,
   type StreamTextResult,
@@ -51,11 +52,11 @@ export class ModelAdapter {
     // Prepare messages with system prompt
     const allMessages = this.prepareMessages(messages, systemPrompt);
 
-    const result: GenerateTextResult<Record<string, CoreTool>, never> = await generateText({
+    const result: GenerateTextResult<Record<string, Tool>, never> = await generateText({
       model: this.model,
       messages: allMessages,
-      tools: tools as Record<string, CoreTool> | undefined,
-      maxTokens,
+      tools: tools as Record<string, Tool> | undefined,
+      maxOutputTokens: maxTokens,
       temperature,
       stopSequences,
     });
@@ -87,16 +88,25 @@ export class ModelAdapter {
     const result = await generateText({
       model: this.model,
       messages: allMessages,
-      tools: tools as Record<string, CoreTool> | undefined,
-      maxTokens,
+      tools: tools as Record<string, Tool> | undefined,
+      maxOutputTokens: maxTokens,
       temperature,
-      maxSteps,
+      stopWhen: maxSteps ? stepCountIs(maxSteps) : undefined,
       onStepFinish: (step) => {
         if (step.toolCalls && onToolCall) {
           for (const call of step.toolCalls) {
+            // Check if it's a dynamic tool first (AI SDK 5.x type narrowing requirement)
+            if (call.dynamic) {
+              onToolCall({
+                toolName: call.toolName,
+                args: call.input as Record<string, unknown>,
+              });
+              continue;
+            }
+            // Static tool - input is typed correctly
             onToolCall({
               toolName: call.toolName,
-              args: call.args as Record<string, unknown>,
+              args: call.input as Record<string, unknown>,
             });
           }
         }
@@ -114,11 +124,11 @@ export class ModelAdapter {
 
     const allMessages = this.prepareMessages(messages, systemPrompt);
 
-    const result: StreamTextResult<Record<string, CoreTool>, never> = streamText({
+    const result: StreamTextResult<Record<string, Tool>, never> = streamText({
       model: this.model,
       messages: allMessages,
-      tools: tools as Record<string, CoreTool> | undefined,
-      maxTokens,
+      tools: tools as Record<string, Tool> | undefined,
+      maxOutputTokens: maxTokens,
       temperature,
     });
 
@@ -126,7 +136,7 @@ export class ModelAdapter {
       if (part.type === 'text-delta') {
         yield {
           type: 'text-delta',
-          textDelta: part.textDelta,
+          textDelta: part.text,
         };
       } else if (part.type === 'tool-call') {
         yield {
@@ -134,10 +144,10 @@ export class ModelAdapter {
           toolCall: {
             toolCallId: part.toolCallId,
             toolName: part.toolName,
-            args: part.args as Record<string, unknown>,
+            args: part.input as Record<string, unknown>,
           },
         };
-      } else if (part.type === 'step-finish') {
+      } else if (part.type === 'finish-step') {
         // Step finish indicates completion of a step (may include tool results)
         yield {
           type: 'finish',
@@ -169,7 +179,7 @@ export class ModelAdapter {
   /**
    * Prepare messages with system prompt
    */
-  private prepareMessages(messages: CoreMessage[], systemPrompt?: string): CoreMessage[] {
+  private prepareMessages(messages: ModelMessage[], systemPrompt?: string): ModelMessage[] {
     const prompt = systemPrompt ?? this.defaultSystemPrompt;
     if (prompt) {
       return [{ role: 'system', content: prompt }, ...messages];
@@ -181,21 +191,21 @@ export class ModelAdapter {
    * Map AI SDK result to our GenerateResult
    */
   private mapGenerateResult(
-    result: GenerateTextResult<Record<string, CoreTool>, never>
+    result: GenerateTextResult<Record<string, Tool>, never>
   ): GenerateResult {
     return {
       text: result.text,
       toolCalls: result.toolCalls?.map((call) => ({
         toolCallId: call.toolCallId,
         toolName: call.toolName,
-        args: call.args as Record<string, unknown>,
+        args: call.input as Record<string, unknown>,
       })),
       usage: result.usage
         ? {
-            promptTokens: result.usage.promptTokens,
-            completionTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
-          }
+          promptTokens: result.usage.inputTokens ?? 0,
+          completionTokens: result.usage.outputTokens ?? 0,
+          totalTokens: result.usage.totalTokens ?? 0,
+        }
         : undefined,
       finishReason: result.finishReason as GenerateResult['finishReason'],
     };
