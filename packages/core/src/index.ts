@@ -36,6 +36,12 @@ export {
   ModelFactory,
   ProviderNotAvailableError,
   InvalidModelConfigError,
+  type ProviderType,
+  type ModelProvider,
+  type ProviderFactory,
+  type ProviderConfig,
+  type ProviderRegistration,
+  type ProviderRegistry,
 } from './core/model/ModelFactory';
 
 // Core - Tools

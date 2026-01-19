@@ -4,12 +4,6 @@
   "workspaces": {
     "": {
       "name": "ai-agent-plan",
-      "dependencies": {
-        "@ai-sdk/anthropic": "^2.0.57",
-        "@ai-sdk/google": "^2.0.52",
-        "@ai-sdk/openai": "^2.0.89",
-        "ai": "^5.0.97",
-      },
     },
     "packages/core": {
       "name": "@ai-agent-plan/core",
@@ -75,11 +69,7 @@
 
     "@ai-agent-plan/example": ["@ai-agent-plan/example@workspace:packages/example"],
 
-    "@ai-sdk/anthropic": ["@ai-sdk/anthropic@2.0.57", "https://registry.npmmirror.com/@ai-sdk/anthropic/-/anthropic-2.0.57.tgz", { "dependencies": { "@ai-sdk/provider": "2.0.1", "@ai-sdk/provider-utils": "3.0.20" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-DREpYqW2pylgaj69gZ+K8u92bo9DaMgFdictYnY+IwYeY3bawQ4zI7l/o1VkDsBDljAx8iYz5lPURwVZNu+Xpg=="],
-
     "@ai-sdk/gateway": ["@ai-sdk/gateway@2.0.27", "https://registry.npmmirror.com/@ai-sdk/gateway/-/gateway-2.0.27.tgz", { "dependencies": { "@ai-sdk/provider": "2.0.1", "@ai-sdk/provider-utils": "3.0.20", "@vercel/oidc": "3.1.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-8hbezMsGa0crSt7/DKjkYL1UbbJJW/UFxTfhmf5qcIeYeeWG4dTNmm+DWbUdIsTaWvp59KC4eeC9gYXBbTHd7w=="],
-
-    "@ai-sdk/google": ["@ai-sdk/google@2.0.52", "https://registry.npmmirror.com/@ai-sdk/google/-/google-2.0.52.tgz", { "dependencies": { "@ai-sdk/provider": "2.0.1", "@ai-sdk/provider-utils": "3.0.20" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-2XUnGi3f7TV4ujoAhA+Fg3idUoG/+Y2xjCRg70a1/m0DH1KSQqYaCboJ1C19y6ZHGdf5KNT20eJdswP6TvrY2g=="],
 
     "@ai-sdk/openai": ["@ai-sdk/openai@2.0.89", "https://registry.npmmirror.com/@ai-sdk/openai/-/openai-2.0.89.tgz", { "dependencies": { "@ai-sdk/provider": "2.0.1", "@ai-sdk/provider-utils": "3.0.20" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-4+qWkBCbL9HPKbgrUO/F2uXZ8GqrYxHa8SWEYIzxEJ9zvWw3ISr3t1/27O1i8MGSym+PzEyHBT48EV4LAwWaEw=="],
 

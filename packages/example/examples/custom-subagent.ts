@@ -11,6 +11,15 @@ import {
   type AgentContext,
   type AgentResult,
   type SubAgentConfig,
+  ModelFactory,
+  type ProviderRegistry,
+  ToolRegistry,
+  Memory,
+  EventBus,
+  Logger,
+  MainAgent,
+  type MainAgentDependencies,
+  TaskQueue,
 } from '@ai-agent-plan/core';
 
 /**
@@ -103,7 +112,7 @@ Provide structured, actionable feedback.`;
 
       // Get history
       const history = this.memory.getRecentMessages(ctx.conversationId);
-      const messages = this.toCoreMesages(history);
+      const messages = this.toCoreMessages(history);
 
       // Generate review
       const result = await this.generate(messages, { systemPrompt });
@@ -179,7 +188,7 @@ Provide accurate, natural-sounding translations while preserving the original me
 
       this.addToMemory(ctx.conversationId, 'user', task);
       const history = this.memory.getRecentMessages(ctx.conversationId);
-      const messages = this.toCoreMesages(history);
+      const messages = this.toCoreMessages(history);
 
       const result = await this.generate(messages, { systemPrompt });
 
@@ -198,7 +207,7 @@ Provide accurate, natural-sounding translations while preserving the original me
 }
 
 /**
- * Example usage
+ * Create custom sub-agents with given dependencies
  */
 export function createCustomSubAgents(dependencies: AgentDependencies) {
   const codeReviewer = new CodeReviewSubAgent(dependencies, {
@@ -225,4 +234,98 @@ export function createCustomSubAgents(dependencies: AgentDependencies) {
   });
 
   return { codeReviewer, translator };
+}
+
+/**
+ * Example: Complete setup with provider registration
+ */
+export async function exampleUsage() {
+  const logger = new Logger({
+    level: 'info',
+    context: 'CustomSubAgentExample',
+  });
+
+  try {
+    // Register model providers (following Dependency Inversion Principle)
+    logger.info('Registering model providers...');
+    try {
+      const { createOpenAI } = await import('@ai-sdk/openai');
+      const { createAnthropic } = await import('@ai-sdk/anthropic');
+      const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+      const { createOpenAICompatible } = await import('@ai-sdk/openai-compatible');
+
+      const registry: Partial<ProviderRegistry> = {
+        openai: { provider: createOpenAI },
+        anthropic: { provider: createAnthropic },
+        google: { provider: createGoogleGenerativeAI },
+        custom: { provider: createOpenAICompatible },
+      };
+
+      ModelFactory.registerProviders(registry);
+      logger.info('Model providers registered successfully');
+    } catch (error) {
+      logger.warn('Some providers failed to load', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Continue with available providers
+    }
+
+    // Create model adapter
+    const modelAdapter = ModelFactory.create({
+      provider: 'openai',
+      name: 'gpt-4',
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    // Create dependencies
+    const tools = new ToolRegistry();
+    const memory = new Memory({ maxMessages: 50 });
+    const eventBus = new EventBus();
+    const taskQueue = new TaskQueue({ maxConcurrent: 3 });
+
+    const dependencies: AgentDependencies = {
+      model: modelAdapter,
+      tools,
+      memory,
+      eventBus,
+      logger,
+    };
+
+    // Create custom sub-agents
+    const { codeReviewer, translator } = createCustomSubAgents(dependencies);
+
+    // Create main agent with custom sub-agents
+    const mainAgentDependencies: MainAgentDependencies = {
+      ...dependencies,
+      taskQueue,
+    };
+
+    const mainAgent = new MainAgent(mainAgentDependencies, {
+      id: 'main-agent',
+      name: 'Main Agent',
+      model: {
+        provider: 'openai',
+        name: 'gpt-4',
+      },
+      systemPrompt: 'You are a helpful assistant with specialized sub-agents.',
+    });
+
+    // Add custom sub-agents to main agent
+    // Note: This would require extending MainAgent to support external sub-agents
+    // For now, this demonstrates the setup pattern
+
+    logger.info('Custom sub-agents created successfully');
+    return { mainAgent, codeReviewer, translator };
+  } catch (error) {
+    logger.error('Example failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+}
+
+// Run example if executed directly
+if (require.main === module) {
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  exampleUsage().catch(console.error);
 }

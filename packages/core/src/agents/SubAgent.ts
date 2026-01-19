@@ -130,7 +130,7 @@ export class ToolSubAgent extends SubAgent {
 
       // Get history for context
       const history = this.memory.getRecentMessages(ctx.conversationId);
-      const messages = this.toCoreMesages(history);
+      const messages = this.toCoreMessages(history);
 
       // Build tools subset if specific tools are configured
       let tools = this.tools.toCoreTools(this.id);

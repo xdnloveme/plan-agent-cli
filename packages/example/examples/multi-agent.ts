@@ -9,6 +9,7 @@ import {
   MainAgent,
   type MainAgentDependencies,
   ModelFactory,
+  type ProviderRegistry,
   ToolRegistry,
   Memory,
   EventBus,
@@ -85,9 +86,33 @@ async function main() {
   logger.info('Starting multi-agent example');
 
   try {
+    // Register model providers (following Dependency Inversion Principle)
+    logger.info('Registering model providers...');
+    try {
+      const { createOpenAI } = await import('@ai-sdk/openai');
+      const { createAnthropic } = await import('@ai-sdk/anthropic');
+      const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+      const { createOpenAICompatible } = await import('@ai-sdk/openai-compatible');
+
+      const registry: Partial<ProviderRegistry> = {
+        openai: { provider: createOpenAI },
+        anthropic: { provider: createAnthropic },
+        google: { provider: createGoogleGenerativeAI },
+        custom: { provider: createOpenAICompatible },
+      };
+
+      ModelFactory.registerProviders(registry);
+      logger.info('Model providers registered successfully');
+    } catch (error) {
+      logger.warn('Some providers failed to load', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Continue with available providers
+    }
+
     // Create model adapter
     logger.info('Creating model adapter...');
-    const modelAdapter = await ModelFactory.create(exampleConfig.model);
+    const modelAdapter = ModelFactory.create(exampleConfig.model);
 
     // Create tool registry with built-in tools
     logger.info('Setting up tools...');

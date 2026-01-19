@@ -140,7 +140,7 @@ export class MainAgent extends BaseAgent {
   private async handleDirectly(_task: string, context: AgentContext): Promise<AgentResult> {
     // Get conversation history (task is already in history from execute())
     const history = this.memory.getRecentMessages(context.conversationId);
-    const messages = this.toCoreMesages(history);
+    const messages = this.toCoreMessages(history);
 
     // Generate response with tools
     return this.generateWithTools(messages);

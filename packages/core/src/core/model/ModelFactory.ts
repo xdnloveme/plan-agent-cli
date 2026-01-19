@@ -1,29 +1,58 @@
-// 前置加载环境变量
-import '../../config/env';
-
 import type { LanguageModel } from 'ai';
 import type { ModelConfig } from '../../agents/types';
 import { ModelAdapter } from './ModelAdapter';
 
-// 这些包是 peer dependencies，可能未安装，使用条件类型导入
-type AnthropicModule = typeof import('@ai-sdk/anthropic');
-type OpenaiModule = typeof import('@ai-sdk/openai');
-type GoogleModule = typeof import('@ai-sdk/google');
-// @ai-sdk/openai-compatible 可能没有类型定义，使用更灵活的类型
-type OpenAICompatibleModule = {
-  createOpenAICompatible?: (config: { baseURL: string; apiKey?: string; name?: string }) => {
-    (modelId: string): LanguageModel;
-  };
-} & Record<string, unknown>;
+/**
+ * Provider type enumeration - ModelFactory only provides enum values, not concrete implementations
+ */
+export type ProviderType = 'openai' | 'anthropic' | 'google' | 'custom';
 
 /**
- * Error thrown when a model provider is not available
+ * ModelProvider interface - abstracts the ability to create LanguageModel instances
+ * This is a function that takes a model name and returns a LanguageModel instance
+ */
+export type ModelProvider = (modelName: string) => LanguageModel;
+
+/**
+ * Provider Factory interface - factory function that creates ModelProvider instances
+ * 
+ * Different types of providers have different configuration parameters:
+ * - OpenAI: requires baseURL? and apiKey?
+ * - Anthropic: requires apiKey?
+ * - Google: requires apiKey?
+ * - Custom: requires baseURL and apiKey?
+ */
+export type ProviderFactory = (config: ProviderConfig) => ModelProvider;
+
+/**
+ * Provider configuration parameters
+ */
+export interface ProviderConfig {
+  baseURL?: string;
+  apiKey?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Provider registration entry - contains the provider factory function
+ */
+export interface ProviderRegistration {
+  provider: ProviderFactory;
+}
+
+/**
+ * Provider registry - key is ProviderType, value is ProviderRegistration
+ */
+export type ProviderRegistry = Record<ProviderType, ProviderRegistration>;
+
+/**
+ * Error thrown when a model provider is not registered
  */
 export class ProviderNotAvailableError extends Error {
   constructor(provider: string) {
     super(
-      `Model provider "${provider}" is not available. ` +
-      `Please install the corresponding package: @ai-sdk/${provider}`
+      `Model provider "${provider}" is not registered. ` +
+      `Please register it first using ModelFactory.registerProviders() or ModelFactory.registerProvider().`
     );
     this.name = 'ProviderNotAvailableError';
   }
@@ -40,189 +69,126 @@ export class InvalidModelConfigError extends Error {
 }
 
 /**
- * Provider module cache
+ * Provider registry - stores externally registered provider implementations
  */
-const providerCache = new Map<string, unknown>();
+const providerRegistry = new Map<ProviderType, ProviderRegistration>();
 
 /**
  * Model factory that creates ModelAdapter instances based on configuration
  *
- * Supports dynamic loading of AI SDK provider packages, allowing users
- * to only install the providers they need.
+ * Follows the Dependency Inversion Principle:
+ * - ModelFactory only provides ProviderType enum values, not concrete implementations
+ * - External code passes provider implementations via registerProviders in key-value format
+ * - The create method retrieves the corresponding implementation from the registry by enum value
  */
 export class ModelFactory {
   /**
-   * Create a ModelAdapter from configuration
+   * Register provider implementations (initialize the factory)
+   * 
+   * External code passes provider implementations in key-value format,
+   * e.g.: { "openai": { provider: createOpenAI }, "anthropic": { provider: createAnthropic } }
+   * 
+   * @param registry - Provider registry, key is ProviderType, value is ProviderRegistration
+   * 
+   * @example
+   * ```typescript
+   * import { createOpenAI } from '@ai-sdk/openai';
+   * import { createAnthropic } from '@ai-sdk/anthropic';
+   * 
+   * ModelFactory.registerProviders({
+   *   openai: { provider: createOpenAI },
+   *   anthropic: { provider: createAnthropic },
+   * });
+   * ```
    */
-  static async create(config: ModelConfig): Promise<ModelAdapter> {
-    const model = await this.createLanguageModel(config);
-    return new ModelAdapter(model);
+  static registerProviders(registry: Partial<ProviderRegistry>): void {
+    for (const [type, registration] of Object.entries(registry)) {
+      providerRegistry.set(type as ProviderType, registration);
+    }
   }
 
   /**
-   * Create a LanguageModel from configuration
+   * Register a single provider implementation
+   * 
+   * @param type - Provider type
+   * @param registration - Provider registration entry
    */
-  static async createLanguageModel(config: ModelConfig): Promise<LanguageModel> {
+  static registerProvider(type: ProviderType, registration: ProviderRegistration): void {
+    providerRegistry.set(type, registration);
+  }
+
+  /**
+   * Get a registered provider
+   * 
+   * @param type - Provider type
+   * @returns Provider registration entry, or undefined if not registered
+   */
+  static getProvider(type: ProviderType): ProviderRegistration | undefined {
+    return providerRegistry.get(type);
+  }
+
+  /**
+   * Check if a provider is registered
+   * 
+   * @param type - Provider type
+   * @returns Whether the provider is registered
+   */
+  static isProviderRegistered(type: ProviderType): boolean {
+    return providerRegistry.has(type);
+  }
+
+  /**
+   * Create a ModelAdapter (uses registry, follows Dependency Inversion Principle)
+   * 
+   * Retrieves the corresponding provider implementation from the registry,
+   * then creates a ModelAdapter instance.
+   * 
+   * @param config - Model configuration, includes provider type, model name, and configuration parameters
+   * @returns ModelAdapter instance
+   * 
+   * @example
+   * ```typescript
+   * // 1. Register provider first
+   * import { createOpenAI } from '@ai-sdk/openai';
+   * ModelFactory.registerProviders({
+   *   openai: { provider: createOpenAI },
+   * });
+   * 
+   * // 2. Create ModelAdapter using ModelConfig
+   * const adapter = ModelFactory.create({
+   *   provider: 'openai',
+   *   name: 'gpt-4',
+   *   apiKey: process.env.OPENAI_API_KEY,
+   * });
+   * ```
+   */
+  static create(config: ModelConfig): ModelAdapter {
     const { provider, name, baseURL, apiKey, options } = config;
 
-    switch (provider) {
-      case 'openai':
-        return this.createOpenAIModel(name, { baseURL, apiKey, ...options });
+    // Convert ModelConfig's provider string to ProviderType
+    const providerType = provider as ProviderType;
 
-      case 'anthropic':
-        return this.createAnthropicModel(name, { apiKey, ...options });
+    // Get provider implementation from registry
+    const registration = providerRegistry.get(providerType);
 
-      case 'google':
-        return this.createGoogleModel(name, { apiKey, ...options });
-
-      case 'custom':
-        return this.createCustomModel(name, { baseURL, apiKey, ...options });
-
-      default:
-        throw new InvalidModelConfigError(`Unknown provider: ${provider}`);
-    }
-  }
-
-  /**
-   * Create OpenAI model
-   */
-  private static async createOpenAIModel(
-    modelName: string,
-    options: { baseURL?: string; apiKey?: string;[key: string]: unknown }
-  ): Promise<LanguageModel> {
-    const openaiModule = await this.loadProvider('@ai-sdk/openai') as OpenaiModule;
-
-    // Type guard for module with createOpenAI
-    const { createOpenAI } = openaiModule;
-
-    const provider = createOpenAI({
-      baseURL: options.baseURL ?? process.env.OPENAI_BASE_URL,
-      apiKey: options.apiKey ?? process.env.OPENAI_API_KEY,
-    });
-
-    return provider(modelName);
-  }
-
-  /**
-   * Create Anthropic model
-   */
-  private static async createAnthropicModel(
-    modelName: string,
-    options: { apiKey?: string;[key: string]: unknown }
-  ): Promise<LanguageModel> {
-    const anthropicModule = await this.loadProvider('@ai-sdk/anthropic') as AnthropicModule;
-
-    // Type guard for module with createAnthropic
-    const { createAnthropic } = anthropicModule;
-
-    const provider = createAnthropic({
-      apiKey: options.apiKey ?? process.env.ANTHROPIC_API_KEY,
-    });
-
-    return provider(modelName);
-  }
-
-  /**
-   * Create Google model
-   */
-  private static async createGoogleModel(
-    modelName: string,
-    options: { apiKey?: string;[key: string]: unknown }
-  ): Promise<LanguageModel> {
-    const googleModule = await this.loadProvider('@ai-sdk/google') as GoogleModule;
-    const { createGoogleGenerativeAI } = googleModule;
-
-    const provider = createGoogleGenerativeAI({
-      apiKey: options.apiKey ?? process.env.GOOGLE_API_KEY,
-    });
-
-    return provider(modelName);
-  }
-
-  /**
-   * Create custom OpenAI-compatible model
-   */
-  private static async createCustomModel(
-    modelName: string,
-    options: { baseURL?: string; apiKey?: string;[key: string]: unknown }
-  ): Promise<LanguageModel> {
-    if (!options.baseURL) {
-      throw new InvalidModelConfigError('baseURL is required for custom provider');
+    if (!registration) {
+      throw new ProviderNotAvailableError(provider);
     }
 
-    // Try to use openai-compatible provider first
-    try {
-      const compatModule = await this.loadProvider('@ai-sdk/openai-compatible') as OpenAICompatibleModule;
-      const { createOpenAICompatible } = compatModule;
+    // Build ProviderConfig
+    const providerConfig: ProviderConfig = {
+      baseURL,
+      apiKey,
+      ...options,
+    };
 
-      if (!createOpenAICompatible) {
-        throw new Error('createOpenAICompatible not found');
-      }
+    // Get provider factory function from registry, create provider instance
+    const modelProvider = registration.provider(providerConfig);
 
-      const provider = createOpenAICompatible({
-        baseURL: options.baseURL,
-        apiKey: options.apiKey,
-        name: 'custom',
-      });
+    // Create LanguageModel using provider
+    const model = modelProvider(name);
 
-      return provider(modelName) as LanguageModel;
-    } catch {
-      // Fall back to standard OpenAI provider with custom base URL
-      return this.createOpenAIModel(modelName, options);
-    }
-  }
-
-  /**
-   * Dynamically load a provider package
-   */
-  private static async loadProvider(packageName: string): Promise<unknown> {
-    // Check cache first
-    if (providerCache.has(packageName)) {
-      return providerCache.get(packageName);
-    }
-
-    try {
-      const module = await import(packageName);
-      providerCache.set(packageName, module);
-      return module;
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        (error.message.includes('Cannot find module') ||
-          error.message.includes('ERR_MODULE_NOT_FOUND'))
-      ) {
-        throw new ProviderNotAvailableError(packageName.replace('@ai-sdk/', ''));
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Check if a provider is available
-   */
-  static async isProviderAvailable(provider: string): Promise<boolean> {
-    const packageName = `@ai-sdk/${provider}`;
-    try {
-      await this.loadProvider(packageName);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Get list of available providers
-   */
-  static async getAvailableProviders(): Promise<string[]> {
-    const providers = ['openai', 'anthropic', 'google', 'openai-compatible'];
-    const available: string[] = [];
-
-    for (const provider of providers) {
-      if (await this.isProviderAvailable(provider)) {
-        available.push(provider);
-      }
-    }
-
-    return available;
+    // Wrap into ModelAdapter
+    return new ModelAdapter(model);
   }
 }

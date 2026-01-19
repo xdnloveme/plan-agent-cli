@@ -171,7 +171,7 @@ export abstract class BaseAgent {
   /**
    * Convert Message to ModelMessage format
    */
-  protected toCoreMesges(messages: Message[]): ModelMessage[] {
+  protected toCoreMessages(messages: Message[]): ModelMessage[] {
     return messages.map((msg) => ({
       role: msg.role as 'user' | 'assistant' | 'system',
       content: msg.content,
